@@ -1,28 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { skillsData } from "@/lib/data"
-
-// Group skills by category
-const groupedSkills = skillsData.reduce((acc, skill) => {
-  // A skill can appear in multiple categories
-  skill.categories.forEach(category => {
-    if (!acc[category]) {
-      acc[category] = []
-    }
-    acc[category].push(skill)
-  })
-  return acc
-}, {} as Record<string, typeof skillsData>)
-
-// Group skills by proficiency within each category
-Object.keys(groupedSkills).forEach((category) => {
-  groupedSkills[category].sort((a, b) => {
-    const proficiencyOrder = { expert: 0, advanced: 1, intermediate: 2, beginner: 3 }
-    return proficiencyOrder[a.proficiency] - proficiencyOrder[b.proficiency]
-  })
-})
+import { type Skill } from "@/lib/types"
 
 // Category labels
 const categoryLabels: Record<string, string> = {
@@ -44,9 +24,45 @@ const proficiencyDescriptions: Record<string, string> = {
 
 export default function SkillsPage() {
   const [activeTab, setActiveTab] = useState("all")
+  const [skills, setSkills] = useState<Skill[]>([])
+  const [groupedSkills, setGroupedSkills] = useState<Record<string, Skill[]>>({})
+  const [categories, setCategories] = useState<string[]>([])
 
-  // Get all categories
-  const categories = Object.keys(groupedSkills)
+  useEffect(() => {
+    async function fetchSkills() {
+      const response = await fetch('/api/data/skills')
+      if (!response.ok) {
+        console.error('Failed to fetch skills')
+        return
+      }
+      const data = await response.json()
+      setSkills(data)
+
+      // Group skills by category
+      const grouped = data.reduce((acc: Record<string, Skill[]>, skill: Skill) => {
+        skill.categories.forEach(category => {
+          if (!acc[category]) {
+            acc[category] = []
+          }
+          acc[category].push(skill)
+        })
+        return acc
+      }, {})
+
+      // Sort skills by proficiency within each category
+      Object.keys(grouped).forEach((category) => {
+        grouped[category].sort((a: Skill, b: Skill) => {
+          const proficiencyOrder = { expert: 0, advanced: 1, intermediate: 2, beginner: 3 } as const
+          return proficiencyOrder[a.proficiency] - proficiencyOrder[b.proficiency]
+        })
+      })
+
+      setGroupedSkills(grouped)
+      setCategories(Object.keys(grouped))
+    }
+
+    fetchSkills()
+  }, [])
 
   return (
     <div className="section-container">
@@ -70,9 +86,9 @@ export default function SkillsPage() {
 
                 {/* Group by proficiency level */}
                 {["expert", "advanced", "intermediate", "beginner"].map((proficiency) => {
-                  const skillsInProficiency = groupedSkills[category].filter(
+                  const skillsInProficiency = groupedSkills[category]?.filter(
                     (skill) => skill.proficiency === proficiency,
-                  )
+                  ) || []
 
                   if (skillsInProficiency.length === 0) return null
 
@@ -105,7 +121,9 @@ export default function SkillsPage() {
 
               {/* Group by proficiency level */}
               {["expert", "advanced", "intermediate", "beginner"].map((proficiency) => {
-                const skillsInProficiency = groupedSkills[category].filter((skill) => skill.proficiency === proficiency)
+                const skillsInProficiency = groupedSkills[category]?.filter(
+                  (skill) => skill.proficiency === proficiency,
+                ) || []
 
                 if (skillsInProficiency.length === 0) return null
 

@@ -13,16 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AddSkillForm from "@/components/add-skill-form"
 import AddProjectForm from "@/components/add-project-form"
 import AddCourseForm from "@/components/add-course-form"
-import {
-  type Skill,
-  type Project,
-  type Update,
-  type OnlineCourse,
-  skillsData,
-  projectsData,
-  updatesData,
-  onlineCoursesData,
-} from "@/lib/data"
+import { type Skill, type Project, type Update, type OnlineCourse } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Clock } from "lucide-react"
@@ -31,10 +22,48 @@ export default function AdminPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isAuthorized, setIsAuthorized] = useState(false)
-  const [skills, setSkills] = useState<Skill[]>(skillsData)
-  const [projects, setProjects] = useState<Project[]>(projectsData)
-  const [updates, setUpdates] = useState<Update[]>(updatesData)
-  const [courses, setCourses] = useState<OnlineCourse[]>(onlineCoursesData)
+  const [isLoading, setIsLoading] = useState(true)
+  const [skills, setSkills] = useState<Skill[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [updates, setUpdates] = useState<Update[]>([])
+  const [courses, setCourses] = useState<OnlineCourse[]>([])
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [skillsRes, projectsRes, updatesRes, coursesRes] = await Promise.all([
+          fetch("/api/data/skills"),
+          fetch("/api/data/projects"),
+          fetch("/api/data/updates"),
+          fetch("/api/data/courses")
+        ])
+
+        const [skillsData, projectsData, updatesData, coursesData] = await Promise.all([
+          skillsRes.json(),
+          projectsRes.json(),
+          updatesRes.json(),
+          coursesRes.json()
+        ])
+
+        setSkills(skillsData)
+        setProjects(projectsData)
+        setUpdates(updatesData)
+        setCourses(coursesData)
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load data. Please refresh the page.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [toast])
 
   useEffect(() => {
     const checkAuth = () => {
@@ -48,7 +77,7 @@ export default function AdminPage() {
     checkAuth()
   }, [router])
 
-  if (!isAuthorized) {
+  if (!isAuthorized || isLoading) {
     return null // or a loading state
   }
 

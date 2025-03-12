@@ -9,7 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { OnlineCourse } from "@/lib/data"
+import { Badge } from "@/components/ui/badge"
+import type { OnlineCourse } from "@/lib/types"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 interface AddCourseFormProps {
   onAddCourse: (course: OnlineCourse) => void

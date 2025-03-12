@@ -1,17 +1,43 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Github, Linkedin, Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { projectsData, skillsData } from "@/lib/data"
+import { Github, Linkedin, Mail, ArrowRight } from "lucide-react"
+import SkillCard from "@/components/skill-card"
+import { type Project, type Skill } from "@/lib/types"
 
-export default function Home() {
-  // Get featured projects
-  const featuredProjects = projectsData.filter((project) => project.featured)
+async function getData() {
+  const [projectsRes, skillsRes] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/data/projects`, { next: { revalidate: 3600 } }),
+    fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/data/skills`, { next: { revalidate: 3600 } })
+  ])
 
-  // Get expert skills
-  const expertSkills = skillsData.filter((skill) => skill.proficiency === "expert")
+  if (!projectsRes.ok || !skillsRes.ok) {
+    throw new Error("Failed to fetch data")
+  }
+
+  const [projects, skills] = await Promise.all([
+    projectsRes.json(),
+    skillsRes.json()
+  ])
+
+  return {
+    projects: projects as Project[],
+    skills: skills as Skill[]
+  }
+}
+
+export const metadata: Metadata = {
+  title: "Noah Andersen-Kiel - Portfolio",
+  description: "Full-stack developer with a passion for building modern web applications.",
+}
+
+export default async function HomePage() {
+  const { projects, skills } = await getData()
+  const featuredProjects = projects.filter(project => project.featured)
+  const expertSkills = skills.filter(skill => skill.proficiency === "expert")
 
   return (
     <div className="flex flex-col gap-16 pb-16">

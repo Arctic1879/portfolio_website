@@ -1,24 +1,49 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Github } from "lucide-react"
-import { projectsData } from "@/lib/data"
-
-// Get unique tags from all projects
-const allTags = Array.from(new Set(projectsData.flatMap((project) => project.tags))).sort()
+import { type Project } from "@/lib/types"
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([])
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Get unique tags from all projects
+  const allTags = Array.from(new Set(projects.flatMap((project) => project.tags))).sort()
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch("/api/data/projects")
+        if (!response.ok) {
+          throw new Error("Failed to fetch projects")
+        }
+        const data = await response.json()
+        setProjects(data)
+      } catch (error) {
+        console.error("Error fetching projects:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
 
   // Filter projects by selected tag
   const filteredProjects = selectedTag
-    ? projectsData.filter((project) => project.tags.includes(selectedTag))
-    : projectsData
+    ? projects.filter((project) => project.tags.includes(selectedTag))
+    : projects
+
+  if (isLoading) {
+    return <div className="section-container">Loading...</div>
+  }
 
   return (
     <div className="section-container">
@@ -54,7 +79,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Projects grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {filteredProjects.map((project) => (
           <Card key={project.id} className="overflow-hidden card-hover cyberpunk-glow">
             <div className="aspect-video relative">
@@ -66,36 +91,27 @@ export default function ProjectsPage() {
               />
             </div>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-2">{project.title}</h2>
-              <p className="text-muted-foreground mb-4 line-clamp-3">{project.description}</p>
+              <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+              <p className="text-muted-foreground mb-4">{project.description}</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {project.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="cursor-pointer bg-gradient-to-r from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30"
-                    onClick={() => setSelectedTag(tag)}
-                  >
+                  <Badge key={tag} variant="outline" className="cyberpunk-border">
                     {tag}
                   </Badge>
                 ))}
               </div>
-              <div className="flex gap-4">
+              <div className="flex gap-2">
                 {project.demoUrl && (
-                  <Button
-                    size="sm"
-                    asChild
-                    className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
-                  >
+                  <Button asChild variant="default" size="sm" className="bg-gradient-to-r from-primary to-accent border-none">
                     <Link href={project.demoUrl} target="_blank" rel="noopener noreferrer">
-                      Live Demo
+                      View Demo
                     </Link>
                   </Button>
                 )}
                 {project.githubUrl && (
-                  <Button size="sm" variant="outline" asChild className="cyberpunk-border p-0 h-9 w-9">
+                  <Button size="sm" variant="outline" asChild className="cyberpunk-border p-0 h-8 w-8">
                     <Link href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
-                      <Github className="h-5 w-5" />
+                      <Github className="h-4 w-4" />
                       <span className="sr-only">View on GitHub</span>
                     </Link>
                   </Button>
@@ -105,15 +121,6 @@ export default function ProjectsPage() {
           </Card>
         ))}
       </div>
-
-      {filteredProjects.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No projects found with the selected tag.</p>
-          <Button variant="link" onClick={() => setSelectedTag(null)} className="mt-2">
-            View all projects
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

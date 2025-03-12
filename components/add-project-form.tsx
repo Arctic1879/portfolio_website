@@ -9,8 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { Project } from "@/lib/data"
+import type { Project } from "@/lib/types"
 import { X } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Badge } from "@/components/ui/badge"
 
 interface AddProjectFormProps {
   onAddProject: (project: Project) => void

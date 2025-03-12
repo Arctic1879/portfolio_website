@@ -1,49 +1,52 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { updatesData } from "@/lib/data"
+import { type Update } from "@/lib/types"
+import { headers } from 'next/headers'
 
-// Badge variants for different update types
-const badgeVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  course: "default",
-  certificate: "secondary",
-  project: "outline",
-  other: "outline",
+async function getData() {
+  const headersList = headers()
+  const host = headersList.get('host')
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+  
+  const response = await fetch(`${protocol}://${host}/api/data/updates`, { 
+    next: { revalidate: 3600 },
+    headers: headersList
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch updates")
+  }
+
+  const updates = await response.json()
+  return updates as Update[]
 }
 
-export default function UpdatesPage() {
-  // Sort updates by date (newest first)
-  const sortedUpdates = [...updatesData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+export default async function UpdatesPage() {
+  const updates = await getData()
 
   return (
     <div className="section-container">
-      <h1 className="section-title">Updates & Activities</h1>
-
-      <div className="grid gap-6">
-        {sortedUpdates.map((update) => (
-          <Card key={update.id} className="card-hover">
-            <CardHeader className="pb-2">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <CardTitle className="text-xl">{update.title}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant={badgeVariants[update.type]}>
-                    {update.type.charAt(0).toUpperCase() + update.type.slice(1)}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">{update.date}</span>
+      <h1 className="section-title">Latest Updates</h1>
+      <div className="space-y-6">
+        {updates.map((update) => (
+          <Card key={update.id} className="card-hover cyberpunk-glow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">{update.title}</h2>
+                  <p className="text-muted-foreground mb-4">{update.content}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="cyberpunk-border">
+                      {update.type.charAt(0).toUpperCase() + update.type.slice(1)}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">{update.date}</span>
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p>{update.content}</p>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {sortedUpdates.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No updates available yet.</p>
-        </div>
-      )}
     </div>
   )
 }

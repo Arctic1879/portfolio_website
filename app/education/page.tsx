@@ -1,121 +1,149 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { certificateData, educationData, onlineCoursesData } from "@/lib/data"
+import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ExternalLink, CheckCircle, Clock } from "lucide-react"
+import { CheckCircle, Clock } from "lucide-react"
+import { type Education, type Certificate, type OnlineCourse } from "@/lib/types"
+import { headers } from 'next/headers'
 
-export default function EducationPage() {
+async function getData() {
+  const headersList = await headers()
+  const host = headersList.get('host')
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+
+  const [educationRes, certificatesRes, coursesRes] = await Promise.all([
+    fetch(`${protocol}://${host}/api/data/education`, { 
+      next: { revalidate: 3600 },
+      headers: Object.fromEntries(headersList.entries())
+    }),
+    fetch(`${protocol}://${host}/api/data/certificates`, { 
+      next: { revalidate: 3600 },
+      headers: Object.fromEntries(headersList.entries())
+    }),
+    fetch(`${protocol}://${host}/api/data/courses`, { 
+      next: { revalidate: 3600 },
+      headers: Object.fromEntries(headersList.entries())
+    })
+  ])
+
+  if (!educationRes.ok || !certificatesRes.ok || !coursesRes.ok) {
+    throw new Error("Failed to fetch data")
+  }
+
+  const [education, certificates, courses] = await Promise.all([
+    educationRes.json(),
+    certificatesRes.json(),
+    coursesRes.json()
+  ])
+
+  return {
+    education: education as Education[],
+    certificates: certificates as Certificate[],
+    courses: courses as OnlineCourse[]
+  }
+}
+
+export default async function EducationPage() {
+  const { education, certificates, courses } = await getData()
+
   return (
     <div className="section-container">
-      <h1 className="section-title">Education & Learning</h1>
+      <h1 className="section-title">Education & Certifications</h1>
 
-      {/* Formal Education section */}
-      <div className="mb-16">
-        <h2 className="text-2xl font-bold mb-6">Academic Background</h2>
-        <div className="grid gap-6">
-          {educationData.map((education, index) => (
-            <Card key={index} className="card-hover cyberpunk-glow overflow-hidden">
+      {/* Formal Education */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">Formal Education</h2>
+        <div className="space-y-6">
+          {education.map((edu) => (
+            <Card key={edu.degree} className="card-hover cyberpunk-glow">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
-                  <div>
-                    <h3 className="text-xl font-semibold">{education.degree}</h3>
-                    <p className="text-lg text-muted-foreground">{education.institution}</p>
-                    <p className="text-sm text-muted-foreground">{education.location}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{education.date}</p>
-                    {education.gpa && <p className="text-sm text-muted-foreground">GPA: {education.gpa}</p>}
-                  </div>
+                <h3 className="text-xl font-semibold">{edu.degree}</h3>
+                <p className="text-muted-foreground mb-2">{edu.institution}</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <span>{edu.location}</span>
+                  <span>•</span>
+                  <span>{edu.date}</span>
+                  {edu.gpa && (
+                    <>
+                      <span>•</span>
+                      <span>GPA: {edu.gpa}</span>
+                    </>
+                  )}
                 </div>
-                <p className="mt-4">{education.description}</p>
+                <p>{edu.description}</p>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Online Courses section */}
-      <div className="mb-16">
-        <h2 className="text-2xl font-bold mb-6">Online Courses & Continuous Learning</h2>
-        <div className="grid gap-6 md:grid-cols-2">
-          {onlineCoursesData.map((course, index) => (
-            <Card key={index} className="card-hover cyberpunk-glow overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{course.name}</CardTitle>
-                  {course.completed ? (
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3" /> Completed
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="flex items-center gap-1 border-primary/50">
-                      <Clock className="h-3 w-3" /> In Progress
-                    </Badge>
+      {/* Certificates */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">Certificates</h2>
+        <div className="space-y-4">
+          {certificates.map((cert) => (
+            <Card key={cert.name} className="card-hover cyberpunk-glow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">{cert.name}</h3>
+                    <p className="text-muted-foreground">{cert.issuer}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{cert.date}</p>
+                  </div>
+                  {cert.url && (
+                    <Button asChild variant="outline" size="sm" className="cyberpunk-border">
+                      <Link href={cert.url} target="_blank" rel="noopener noreferrer">
+                        View Certificate
+                      </Link>
+                    </Button>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-muted-foreground">{course.platform}</p>
-                      {course.instructor && (
-                        <p className="text-sm text-muted-foreground">Instructor(s): {course.instructor}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Online Courses */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-6">Online Courses</h2>
+        <div className="space-y-4">
+          {courses.map((course) => (
+            <Card key={course.name} className="card-hover cyberpunk-glow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">{course.name}</h3>
+                      {course.completed ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-yellow-500" />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{course.date}</p>
+                    <p className="text-muted-foreground">
+                      {course.platform}
+                      {course.instructor && ` • ${course.instructor}`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {course.startDate}
+                      {course.endDate && ` - ${course.endDate}`}
+                    </p>
+                    <p className="text-muted-foreground">{course.description}</p>
                   </div>
-                  <p className="text-sm">{course.description}</p>
                   {course.url && (
-                    <div className="pt-2">
-                      <Link
-                        href={course.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
-                      >
-                        View Course <ExternalLink className="h-3 w-3" />
+                    <Button asChild variant="outline" size="sm" className="cyberpunk-border">
+                      <Link href={course.url} target="_blank" rel="noopener noreferrer">
+                        View Course
                       </Link>
-                    </div>
+                    </Button>
                   )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
-
-      {/* Certificates section */}
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Certificates & Credentials</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {certificateData.map((certificate, index) => (
-            <Card key={index} className="card-hover cyberpunk-glow overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{certificate.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-start">
-                  <p className="text-muted-foreground">{certificate.issuer}</p>
-                  <p className="text-sm text-muted-foreground">{certificate.date}</p>
-                </div>
-                {certificate.url && (
-                  <div className="mt-4">
-                    <Link
-                      href={certificate.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Certificate <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </section>
     </div>
   )
 }
