@@ -138,9 +138,10 @@ export default function Home() {
                     </Button>
                   )}
                   {project.githubUrl && (
-                    <Button asChild className="cyberpunk-border border h-8 text-sm px-3">
-                      <Link href={project.githubUrl} target="_blank" rel="noopener noreferrer">
-                        GitHub
+                    <Button size="sm" variant="outline" asChild className="cyberpunk-border p-0 h-8 w-8">
+                      <Link href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                        <Github className="h-4 w-4" />
+                        <span className="sr-only">View on GitHub</span>
                       </Link>
                     </Button>
                   )}
