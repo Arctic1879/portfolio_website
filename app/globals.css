@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 9.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-pink-500;
+}
+
+.cyberpunk-border {
+  @apply relative border border-transparent;
+  background-clip: padding-box;
+}
+
+.cyberpunk-border::after {
+  content: "";
+  @apply absolute inset-0 rounded-lg -z-10 bg-gradient-to-r from-primary via-accent to-pink-500;
+  margin: -1px;
+}
+
+.cyberpunk-glow {
+  @apply relative;
+}
+
+.cyberpunk-glow::before {
+  content: "";
+  @apply absolute inset-0 -z-10 rounded-lg opacity-50 blur-xl;
+  background: radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.3), transparent 70%),
+    radial-gradient(circle at bottom left, rgba(var(--primary-rgb), 0.3), transparent 70%);
+}
+
+.section-container {
+  @apply container mx-auto px-4 py-16 md:py-24;
+}
+
+.section-title {
+  @apply text-3xl md:text-4xl font-bold mb-8 gradient-text;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1;
+}
+
+.skill-tag {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors;
+}
+
+.skill-tag-expert {
+  @apply bg-gradient-to-r from-primary to-accent text-white;
+}
+
+.skill-tag-advanced {
+  @apply bg-gradient-to-r from-primary/80 to-accent/80 text-white;
+}
+
+.skill-tag-intermediate {
+  @apply bg-gradient-to-r from-primary/60 to-accent/60 text-white;
+}
+
+.skill-tag-beginner {
+  @apply bg-gradient-to-r from-primary/40 to-accent/40 text-white;
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.2), transparent 70%),
+    radial-gradient(circle at bottom left, rgba(var(--primary-rgb), 0.2), transparent 70%);
+}
+
+.card-gradient {
+  background: linear-gradient(to bottom right, rgba(var(--primary-rgb), 0.05), rgba(var(--accent-rgb), 0.05));
+}
+
