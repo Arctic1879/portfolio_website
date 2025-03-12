@@ -7,11 +7,22 @@ import { Badge } from "@/components/ui/badge"
 import { Github, Linkedin, Mail, ArrowRight } from "lucide-react"
 import SkillCard from "@/components/skill-card"
 import { type Project, type Skill } from "@/lib/types"
+import { headers } from 'next/headers'
 
 async function getData() {
+  const headersList = await headers()
+  const host = headersList.get('host')
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+
   const [projectsRes, skillsRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/data/projects`, { next: { revalidate: 3600 } }),
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/data/skills`, { next: { revalidate: 3600 } })
+    fetch(`${protocol}://${host}/api/data/projects`, { 
+      next: { revalidate: 3600 },
+      headers: Object.fromEntries(headersList.entries())
+    }),
+    fetch(`${protocol}://${host}/api/data/skills`, { 
+      next: { revalidate: 3600 },
+      headers: Object.fromEntries(headersList.entries())
+    })
   ])
 
   if (!projectsRes.ok || !skillsRes.ok) {
