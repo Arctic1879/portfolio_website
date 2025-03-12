@@ -4,13 +4,13 @@ import { type Update } from "@/lib/types"
 import { headers } from 'next/headers'
 
 async function getData() {
-  const headersList = headers()
+  const headersList = await headers()
   const host = headersList.get('host')
   const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
   
   const response = await fetch(`${protocol}://${host}/api/data/updates`, { 
     next: { revalidate: 3600 },
-    headers: headersList
+    headers: Object.fromEntries(headersList.entries())
   })
 
   if (!response.ok) {
