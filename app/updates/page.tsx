@@ -18,7 +18,10 @@ async function getData() {
   }
 
   const updates = await response.json()
-  return updates as Update[]
+  // Sort updates by date in descending order (most recent first)
+  return (updates as Update[]).sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
 }
 
 export default async function UpdatesPage() {

@@ -48,7 +48,9 @@ export default function AdminPage() {
 
         setSkills(skillsData)
         setProjects(projectsData)
-        setUpdates(updatesData)
+        setUpdates(updatesData.sort((a: Update, b: Update) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        ))
         setCourses(coursesData)
       } catch (error) {
         console.error("Error fetching data:", error)
@@ -195,10 +197,15 @@ export default function AdminPage() {
     }
 
     try {
+      // Add new update and sort the array
+      const sortedUpdates = [newUpdate, ...updates].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+
       const response = await fetch("/api/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "updates", data: [newUpdate, ...updates] }),
+        body: JSON.stringify({ type: "updates", data: sortedUpdates }),
       })
       
       const result = await response.json()
@@ -207,7 +214,7 @@ export default function AdminPage() {
         throw new Error(result.error || "Failed to save update")
       }
       
-      setUpdates([newUpdate, ...updates])
+      setUpdates(sortedUpdates)
       form.reset()
       toast({
         title: "Update added",
