@@ -27,6 +27,7 @@ export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [updates, setUpdates] = useState<Update[]>([])
   const [courses, setCourses] = useState<OnlineCourse[]>([])
+  const [editingUpdate, setEditingUpdate] = useState<Update | null>(null)
 
   // Fetch initial data
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function AdminPage() {
     }
   }
 
-  // Add new update
+  // Add new update or save edited update
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     const form = e.target as HTMLFormElement
@@ -188,8 +189,8 @@ export default function AdminPage() {
       day: 'numeric'
     })
 
-    const newUpdate: Update = {
-      id: `update-${Date.now()}`,
+    const updateData: Update = {
+      id: editingUpdate?.id || `update-${Date.now()}`,
       title: formData.get("title") as string,
       date: formattedDate,
       content: formData.get("content") as string,
@@ -197,8 +198,13 @@ export default function AdminPage() {
     }
 
     try {
-      // Add new update and sort the array
-      const sortedUpdates = [newUpdate, ...updates].sort((a, b) => 
+      // If editing, replace the old update with the new one
+      const newUpdates = editingUpdate 
+        ? updates.map(u => u.id === editingUpdate.id ? updateData : u)
+        : [...updates, updateData]
+
+      // Sort the updates
+      const sortedUpdates = newUpdates.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       )
 
@@ -215,13 +221,14 @@ export default function AdminPage() {
       }
       
       setUpdates(sortedUpdates)
+      setEditingUpdate(null)
       form.reset()
       toast({
-        title: "Update added",
-        description: `${newUpdate.title} has been added to your updates.`,
+        title: editingUpdate ? "Update edited" : "Update added",
+        description: `${updateData.title} has been ${editingUpdate ? 'updated' : 'added'}.`,
       })
     } catch (error) {
-      console.error("Error adding update:", error)
+      console.error("Error saving update:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save update. Please try again.",
@@ -482,14 +489,25 @@ export default function AdminPage() {
           <div className="grid gap-8 md:grid-cols-2">
             <Card className="cyberpunk-glow">
               <CardHeader>
-                <CardTitle>Add New Update</CardTitle>
-                <CardDescription>Share your latest courses, certificates, or other activities</CardDescription>
+                <CardTitle>{editingUpdate ? 'Edit Update' : 'Add New Update'}</CardTitle>
+                <CardDescription>
+                  {editingUpdate 
+                    ? 'Edit your existing update'
+                    : 'Share your latest courses, certificates, or other activities'
+                  }
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddUpdate} className="space-y-4">
                   <div className="grid gap-2">
                     <Label htmlFor="update-title">Title</Label>
-                    <Input id="update-title" name="title" placeholder="e.g., Started a new course" required />
+                    <Input 
+                      id="update-title" 
+                      name="title" 
+                      placeholder="e.g., Started a new course" 
+                      defaultValue={editingUpdate?.title || ''}
+                      required 
+                    />
                   </div>
 
                   <div className="grid gap-2">
@@ -499,13 +517,14 @@ export default function AdminPage() {
                       name="date" 
                       type="date" 
                       max={new Date().toISOString().split('T')[0]}
+                      defaultValue={editingUpdate ? new Date(editingUpdate.date).toISOString().split('T')[0] : ''}
                       required 
                     />
                   </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="update-type">Type</Label>
-                    <Select name="type" defaultValue="course">
+                    <Select name="type" defaultValue={editingUpdate?.type || "course"}>
                       <SelectTrigger id="update-type">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -524,17 +543,34 @@ export default function AdminPage() {
                       id="update-content"
                       name="content"
                       placeholder="Share details about your update..."
+                      defaultValue={editingUpdate?.content || ''}
                       rows={4}
                       required
                     />
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
-                  >
-                    Add Update
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
+                    >
+                      {editingUpdate ? 'Save Changes' : 'Add Update'}
+                    </Button>
+                    {editingUpdate && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cyberpunk-border"
+                        onClick={() => {
+                          setEditingUpdate(null)
+                          const form = document.querySelector('form')
+                          if (form) form.reset()
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -555,12 +591,20 @@ export default function AdminPage() {
                             {update.date} • {update.type.charAt(0).toUpperCase() + update.type.slice(1)}
                           </p>
                         </div>
-                        <Button
-                          className="cyberpunk-border"
-                          onClick={() => handleRemoveUpdate(update.id)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => setEditingUpdate(update)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => handleRemoveUpdate(update.id)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
