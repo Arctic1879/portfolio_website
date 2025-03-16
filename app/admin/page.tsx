@@ -28,6 +28,9 @@ export default function AdminPage() {
   const [updates, setUpdates] = useState<Update[]>([])
   const [courses, setCourses] = useState<OnlineCourse[]>([])
   const [editingUpdate, setEditingUpdate] = useState<Update | null>(null)
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [editingCourse, setEditingCourse] = useState<OnlineCourse | null>(null)
 
   // Fetch initial data
   useEffect(() => {
@@ -84,13 +87,17 @@ export default function AdminPage() {
     return null // or a loading state
   }
 
-  // Add new skill
+  // Add or edit skill
   const handleAddSkill = async (skill: Skill) => {
     try {
+      const newSkills = editingSkill
+        ? skills.map(s => s.name === editingSkill.name ? skill : s)
+        : [...skills, skill]
+
       const response = await fetch("/api/data/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: [...skills, skill] }),
+        body: JSON.stringify({ data: newSkills }),
       })
       
       const result = await response.json()
@@ -99,13 +106,14 @@ export default function AdminPage() {
         throw new Error(result.error || "Failed to save skill")
       }
       
-      setSkills([...skills, skill])
+      setSkills(newSkills)
+      setEditingSkill(null)
       toast({
-        title: "Skill added",
-        description: `${skill.name} has been added to your skills.`,
+        title: editingSkill ? "Skill updated" : "Skill added",
+        description: `${skill.name} has been ${editingSkill ? 'updated' : 'added'} to your skills.`,
       })
     } catch (error) {
-      console.error("Error adding skill:", error)
+      console.error("Error saving skill:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save skill. Please try again.",
@@ -114,13 +122,17 @@ export default function AdminPage() {
     }
   }
 
-  // Add new project
+  // Add or edit project
   const handleAddProject = async (project: Project) => {
     try {
+      const newProjects = editingProject
+        ? projects.map(p => p.id === editingProject.id ? project : p)
+        : [...projects, project]
+
       const response = await fetch("/api/data/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: [...projects, project] }),
+        body: JSON.stringify({ data: newProjects }),
       })
       
       const result = await response.json()
@@ -129,13 +141,14 @@ export default function AdminPage() {
         throw new Error(result.error || "Failed to save project")
       }
       
-      setProjects([...projects, project])
+      setProjects(newProjects)
+      setEditingProject(null)
       toast({
-        title: "Project added",
-        description: `${project.title} has been added to your projects.`,
+        title: editingProject ? "Project updated" : "Project added",
+        description: `${project.title} has been ${editingProject ? 'updated' : 'added'} to your projects.`,
       })
     } catch (error) {
-      console.error("Error adding project:", error)
+      console.error("Error saving project:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save project. Please try again.",
@@ -144,13 +157,17 @@ export default function AdminPage() {
     }
   }
 
-  // Add new course
+  // Add or edit course
   const handleAddCourse = async (course: OnlineCourse) => {
     try {
+      const newCourses = editingCourse
+        ? courses.map((c, i) => i === courses.findIndex(ec => ec.name === editingCourse.name) ? course : c)
+        : [...courses, course]
+
       const response = await fetch("/api/data/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: [...courses, course] }),
+        body: JSON.stringify({ data: newCourses }),
       })
       
       const result = await response.json()
@@ -160,13 +177,14 @@ export default function AdminPage() {
         throw new Error(result.error || "Failed to save course")
       }
       
-      setCourses([...courses, course])
+      setCourses(newCourses)
+      setEditingCourse(null)
       toast({
-        title: "Course added",
-        description: `${course.name} has been added to your courses.`,
+        title: editingCourse ? "Course updated" : "Course added",
+        description: `${course.name} has been ${editingCourse ? 'updated' : 'added'} to your courses.`,
       })
     } catch (error) {
-      console.error("Error adding course:", error)
+      console.error("Error saving course:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save course. Please try again.",
@@ -359,7 +377,7 @@ export default function AdminPage() {
         {/* Skills Tab */}
         <TabsContent value="skills">
           <div className="grid gap-8 md:grid-cols-2">
-            <AddSkillForm onAddSkill={handleAddSkill} />
+            <AddSkillForm onAddSkill={handleAddSkill} editingSkill={editingSkill} />
 
             <Card className="cyberpunk-glow">
               <CardHeader>
@@ -377,12 +395,20 @@ export default function AdminPage() {
                             {skill.categories.join(", ")} • {skill.proficiency}
                           </p>
                         </div>
-                        <Button
-                          className="cyberpunk-border"
-                          onClick={() => handleRemoveSkill(index)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => setEditingSkill(skill)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => handleRemoveSkill(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -397,7 +423,7 @@ export default function AdminPage() {
         {/* Projects Tab */}
         <TabsContent value="projects">
           <div className="grid gap-8 md:grid-cols-2">
-            <AddProjectForm onAddProject={handleAddProject} />
+            <AddProjectForm onAddProject={handleAddProject} editingProject={editingProject} />
 
             <Card className="cyberpunk-glow">
               <CardHeader>
@@ -416,12 +442,20 @@ export default function AdminPage() {
                             {project.featured && " • Featured"}
                           </p>
                         </div>
-                        <Button
-                          className="cyberpunk-border"
-                          onClick={() => handleRemoveProject(project.id)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => setEditingProject(project)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => handleRemoveProject(project.id)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -436,7 +470,7 @@ export default function AdminPage() {
         {/* Courses Tab */}
         <TabsContent value="courses">
           <div className="grid gap-8 md:grid-cols-2">
-            <AddCourseForm onAddCourse={handleAddCourse} />
+            <AddCourseForm onAddCourse={handleAddCourse} editingCourse={editingCourse} />
 
             <Card className="cyberpunk-glow">
               <CardHeader>
@@ -467,12 +501,20 @@ export default function AdminPage() {
                             {course.platform} • {course.startDate}{course.endDate ? ` - ${course.endDate}` : ''}
                           </p>
                         </div>
-                        <Button
-                          className="cyberpunk-border"
-                          onClick={() => handleRemoveCourse(index)}
-                        >
-                          Remove
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => setEditingCourse(course)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => handleRemoveCourse(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (

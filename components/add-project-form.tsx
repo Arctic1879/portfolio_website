@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,16 +19,31 @@ import { Badge } from "@/components/ui/badge"
 
 interface AddProjectFormProps {
   onAddProject: (project: Project) => void
+  editingProject: Project | null
 }
 
-export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
-  const [newProject, setNewProject] = useState<Omit<Project, "id">>({
-    title: "",
-    description: "",
-    tags: [],
-    featured: false,
-    image: "/placeholder.svg?height=600&width=800",
+export default function AddProjectForm({ onAddProject, editingProject }: AddProjectFormProps) {
+  const [newProject, setNewProject] = useState<Omit<Project, "id">>(() => {
+    if (editingProject) {
+      const { id, ...rest } = editingProject
+      return rest
+    }
+    return {
+      title: "",
+      description: "",
+      tags: [],
+      featured: false,
+      image: "/placeholder.svg?height=600&width=800",
+    }
   })
+
+  // Update form when editingProject changes
+  useEffect(() => {
+    if (editingProject) {
+      const { id, ...rest } = editingProject
+      setNewProject(rest)
+    }
+  }, [editingProject])
 
   const [tagInput, setTagInput] = useState("")
 
@@ -54,22 +69,24 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
     if (newProject.title.trim() && newProject.description.trim()) {
       onAddProject({
         ...newProject,
-        id: `project-${Date.now()}`,
+        id: editingProject?.id || `project-${Date.now()}`,
       })
-      setNewProject({
-        title: "",
-        description: "",
-        tags: [],
-        featured: false,
-        image: "/placeholder.svg?height=600&width=800",
-      })
+      if (!editingProject) {
+        setNewProject({
+          title: "",
+          description: "",
+          tags: [],
+          featured: false,
+          image: "/placeholder.svg?height=600&width=800",
+        })
+      }
     }
   }
 
   return (
     <Card className="cyberpunk-glow">
       <CardHeader>
-        <CardTitle>Add New Project</CardTitle>
+        <CardTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -184,7 +201,7 @@ export default function AddProjectForm({ onAddProject }: AddProjectFormProps) {
             type="submit"
             className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
           >
-            Add Project
+            {editingProject ? 'Save Changes' : 'Add Project'}
           </Button>
         </form>
       </CardContent>

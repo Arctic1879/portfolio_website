@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,19 +18,45 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 interface AddCourseFormProps {
   onAddCourse: (course: OnlineCourse) => void
+  editingCourse: OnlineCourse | null
 }
 
-export default function AddCourseForm({ onAddCourse }: AddCourseFormProps) {
-  const [newCourse, setNewCourse] = useState<OnlineCourse>({
-    name: "",
-    platform: "",
-    instructor: "",
-    startDate: "",
-    endDate: "",
-    description: "",
-    url: "",
-    completed: false,
+export default function AddCourseForm({ onAddCourse, editingCourse }: AddCourseFormProps) {
+  const [newCourse, setNewCourse] = useState<OnlineCourse>(() => {
+    if (editingCourse) {
+      // Convert dates back to YYYY-MM format for input fields
+      return {
+        ...editingCourse,
+        startDate: new Date(editingCourse.startDate).toISOString().substring(0, 7),
+        endDate: editingCourse.endDate 
+          ? new Date(editingCourse.endDate).toISOString().substring(0, 7)
+          : "",
+      }
+    }
+    return {
+      name: "",
+      platform: "",
+      instructor: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      url: "",
+      completed: false,
+    }
   })
+
+  // Update form when editingCourse changes
+  useEffect(() => {
+    if (editingCourse) {
+      setNewCourse({
+        ...editingCourse,
+        startDate: new Date(editingCourse.startDate).toISOString().substring(0, 7),
+        endDate: editingCourse.endDate 
+          ? new Date(editingCourse.endDate).toISOString().substring(0, 7)
+          : "",
+      })
+    }
+  }, [editingCourse])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,23 +73,26 @@ export default function AddCourseForm({ onAddCourse }: AddCourseFormProps) {
         startDate: formatDate(newCourse.startDate),
         endDate: newCourse.endDate ? formatDate(newCourse.endDate) : undefined
       })
-      setNewCourse({
-        name: "",
-        platform: "",
-        instructor: "",
-        startDate: "",
-        endDate: "",
-        description: "",
-        url: "",
-        completed: false,
-      })
+
+      if (!editingCourse) {
+        setNewCourse({
+          name: "",
+          platform: "",
+          instructor: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+          url: "",
+          completed: false,
+        })
+      }
     }
   }
 
   return (
     <Card className="cyberpunk-glow">
       <CardHeader>
-        <CardTitle>Add New Course</CardTitle>
+        <CardTitle>{editingCourse ? 'Edit Course' : 'Add New Course'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,7 +188,7 @@ export default function AddCourseForm({ onAddCourse }: AddCourseFormProps) {
             type="submit"
             className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
           >
-            Add Course
+            {editingCourse ? 'Save Changes' : 'Add Course'}
           </Button>
         </form>
       </CardContent>

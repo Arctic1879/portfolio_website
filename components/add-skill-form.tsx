@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 
 interface AddSkillFormProps {
   onAddSkill: (skill: Skill) => void
+  editingSkill: Skill | null
 }
 
 const categoryOptions = [
@@ -29,22 +30,30 @@ const categoryOptions = [
   { id: "other", label: "Other" },
 ] as const
 
-export default function AddSkillForm({ onAddSkill }: AddSkillFormProps) {
-  const [newSkill, setNewSkill] = useState<Skill>({
+export default function AddSkillForm({ onAddSkill, editingSkill }: AddSkillFormProps) {
+  const [newSkill, setNewSkill] = useState<Skill>(() => editingSkill || {
     name: "",
     proficiency: "intermediate",
     categories: [],
   })
 
+  useEffect(() => {
+    if (editingSkill) {
+      setNewSkill(editingSkill)
+    }
+  }, [editingSkill])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (newSkill.name.trim() && newSkill.categories.length > 0) {
       onAddSkill(newSkill)
-      setNewSkill({
-        name: "",
-        proficiency: "intermediate",
-        categories: [],
-      })
+      if (!editingSkill) {
+        setNewSkill({
+          name: "",
+          proficiency: "intermediate",
+          categories: [],
+        })
+      }
     }
   }
 
@@ -60,7 +69,7 @@ export default function AddSkillForm({ onAddSkill }: AddSkillFormProps) {
   return (
     <Card className="cyberpunk-glow">
       <CardHeader>
-        <CardTitle>Add New Skill</CardTitle>
+        <CardTitle>{editingSkill ? 'Edit Skill' : 'Add New Skill'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,7 +139,7 @@ export default function AddSkillForm({ onAddSkill }: AddSkillFormProps) {
             disabled={newSkill.categories.length === 0}
             className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-none"
           >
-            Add Skill
+            {editingSkill ? 'Save Changes' : 'Add Skill'}
           </Button>
         </form>
       </CardContent>
