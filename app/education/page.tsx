@@ -46,6 +46,24 @@ async function getData() {
 export default async function EducationPage() {
   const { education, certificates, courses } = await getData()
 
+  // Group certificates by platform
+  const courseraCertificates = certificates.filter(cert => 
+    cert.issuer.toLowerCase().includes('coursera')
+  )
+  const otherCertificates = certificates.filter(cert => 
+    !cert.issuer.toLowerCase().includes('coursera')
+  )
+
+  // Group courses by platform
+  const platformGroups = courses.reduce((groups, course) => {
+    const platform = course.platform
+    if (!groups[platform]) {
+      groups[platform] = []
+    }
+    groups[platform].push(course)
+    return groups
+  }, {} as Record<string, OnlineCourse[]>)
+
   return (
     <div className="section-container">
       <h1 className="section-title">Education & Certifications</h1>
@@ -77,72 +95,108 @@ export default async function EducationPage() {
         </div>
       </section>
 
-      {/* Certificates */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">Certificates</h2>
-        <div className="space-y-4">
-          {certificates.map((cert) => (
-            <Card key={cert.name} className="card-hover cyberpunk-glow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">{cert.name}</h3>
-                    <p className="text-muted-foreground">{cert.issuer}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{cert.date}</p>
+      {/* Coursera Certificates */}
+      {courseraCertificates.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6">Professional Certificates</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {courseraCertificates.map((cert) => (
+              <Card key={cert.name} className="card-hover cyberpunk-glow">
+                <CardContent className="p-6">
+                  <div className="flex flex-col h-full">
+                    <div className="flex-grow">
+                      <h3 className="text-xl font-semibold mb-2">{cert.name}</h3>
+                      <p className="text-muted-foreground mb-4">{cert.issuer}</p>
+                      <p className="text-sm text-muted-foreground">{cert.date}</p>
+                    </div>
+                    {cert.url && (
+                      <Button asChild variant="outline" size="sm" className="cyberpunk-border mt-4">
+                        <Link href={cert.url} target="_blank" rel="noopener noreferrer">
+                          View Certificate
+                        </Link>
+                      </Button>
+                    )}
                   </div>
-                  {cert.url && (
-                    <Button asChild variant="outline" size="sm" className="cyberpunk-border">
-                      <Link href={cert.url} target="_blank" rel="noopener noreferrer">
-                        View Certificate
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Online Courses */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-6">Online Courses</h2>
-        <div className="space-y-4">
-          {courses.map((course) => (
-            <Card key={course.name} className="card-hover cyberpunk-glow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold">{course.name}</h3>
-                      {course.completed ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Clock className="h-5 w-5 text-yellow-500" />
+      {/* Other Certificates and Courses */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-semibold mb-6">Additional Learning</h2>
+        
+        {/* Other Certificates */}
+        {otherCertificates.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-xl font-medium mb-4">Certificates</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {otherCertificates.map((cert) => (
+                <Card key={cert.name} className="card-hover cyberpunk-glow">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col h-full">
+                      <div className="flex-grow">
+                        <h4 className="font-medium">{cert.name}</h4>
+                        <p className="text-sm text-muted-foreground">{cert.issuer}</p>
+                        <p className="text-xs text-muted-foreground">{cert.date}</p>
+                      </div>
+                      {cert.url && (
+                        <Button asChild variant="outline" size="sm" className="cyberpunk-border mt-2">
+                          <Link href={cert.url} target="_blank" rel="noopener noreferrer">
+                            View
+                          </Link>
+                        </Button>
                       )}
                     </div>
-                    <p className="text-muted-foreground">
-                      {course.platform}
-                      {course.instructor && ` • ${course.instructor}`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {course.startDate}
-                      {course.endDate && ` - ${course.endDate}`}
-                    </p>
-                    <p className="text-muted-foreground">{course.description}</p>
-                  </div>
-                  {course.url && (
-                    <Button asChild variant="outline" size="sm" className="cyberpunk-border">
-                      <Link href={course.url} target="_blank" rel="noopener noreferrer">
-                        View Course
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Courses by Platform */}
+        {Object.entries(platformGroups).map(([platform, platformCourses]) => (
+          <div key={platform} className="mb-8">
+            <h3 className="text-xl font-medium mb-4">{platform}</h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {platformCourses.map((course) => (
+                <Card key={course.name} className="card-hover cyberpunk-glow">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col h-full">
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium">{course.name}</h4>
+                          {course.completed ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-yellow-500" />
+                          )}
+                        </div>
+                        {course.instructor && (
+                          <p className="text-sm text-muted-foreground mb-1">{course.instructor}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {course.startDate}
+                          {course.endDate && ` - ${course.endDate}`}
+                        </p>
+                      </div>
+                      {course.url && (
+                        <Button asChild variant="outline" size="sm" className="cyberpunk-border mt-2">
+                          <Link href={course.url} target="_blank" rel="noopener noreferrer">
+                            View Course
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   )
