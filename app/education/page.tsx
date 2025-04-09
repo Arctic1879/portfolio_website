@@ -131,7 +131,7 @@ export default async function EducationPage() {
         {/* Other Certificates */}
         {otherCertificates.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-xl font-medium mb-4">Certificates</h3>
+            <h3 className="text-xl font-medium mb-4">Other Certifications</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {otherCertificates.map((cert) => (
                 <Card key={cert.name} className="card-hover cyberpunk-glow">
@@ -160,7 +160,9 @@ export default async function EducationPage() {
         {/* Courses by Platform */}
         {Object.entries(platformGroups).map(([platform, platformCourses]) => (
           <div key={platform} className="mb-8">
-            <h3 className="text-xl font-medium mb-4">{platform}</h3>
+            <h3 className="text-xl font-medium mb-4">
+              {platform === 'DataCamp' ? 'DataCamp Learning Paths' : platform}
+            </h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {platformCourses.map((course) => (
                 <Card key={course.name} className="card-hover cyberpunk-glow">
