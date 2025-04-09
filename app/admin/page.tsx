@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AddSkillForm from "@/components/add-skill-form"
 import AddProjectForm from "@/components/add-project-form"
 import AddCourseForm from "@/components/add-course-form"
-import { type Skill, type Project, type Update, type OnlineCourse } from "@/lib/types"
+import AddCertificateForm from "@/components/add-certificate-form"
+import { type Skill, type Project, type Update, type OnlineCourse, type Certificate } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Clock } from "lucide-react"
@@ -27,27 +28,31 @@ export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [updates, setUpdates] = useState<Update[]>([])
   const [courses, setCourses] = useState<OnlineCourse[]>([])
+  const [certificates, setCertificates] = useState<Certificate[]>([])
   const [editingUpdate, setEditingUpdate] = useState<Update | null>(null)
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [editingCourse, setEditingCourse] = useState<OnlineCourse | null>(null)
+  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null)
 
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [skillsRes, projectsRes, updatesRes, coursesRes] = await Promise.all([
+        const [skillsRes, projectsRes, updatesRes, coursesRes, certificatesRes] = await Promise.all([
           fetch("/api/data/skills"),
           fetch("/api/data/projects"),
           fetch("/api/data/updates"),
-          fetch("/api/data/courses")
+          fetch("/api/data/courses"),
+          fetch("/api/data/certificates")
         ])
 
-        const [skillsData, projectsData, updatesData, coursesData] = await Promise.all([
+        const [skillsData, projectsData, updatesData, coursesData, certificatesData] = await Promise.all([
           skillsRes.json(),
           projectsRes.json(),
           updatesRes.json(),
-          coursesRes.json()
+          coursesRes.json(),
+          certificatesRes.json()
         ])
 
         setSkills(skillsData)
@@ -56,6 +61,7 @@ export default function AdminPage() {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         ))
         setCourses(coursesData)
+        setCertificates(certificatesData)
       } catch (error) {
         console.error("Error fetching data:", error)
         toast({
@@ -193,6 +199,41 @@ export default function AdminPage() {
     }
   }
 
+  // Add or edit certificate
+  const handleAddCertificate = async (certificate: Certificate) => {
+    try {
+      const newCertificates = editingCertificate
+        ? certificates.map(c => c.name === editingCertificate.name ? certificate : c)
+        : [...certificates, certificate]
+
+      const response = await fetch("/api/data/certificates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: newCertificates }),
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save certificate")
+      }
+      
+      setCertificates(newCertificates)
+      setEditingCertificate(null)
+      toast({
+        title: editingCertificate ? "Certificate updated" : "Certificate added",
+        description: `${certificate.name} has been ${editingCertificate ? 'updated' : 'added'} to your certificates.`,
+      })
+    } catch (error) {
+      console.error("Error saving certificate:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save certificate. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Add new update or save edited update
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -325,6 +366,29 @@ export default function AdminPage() {
     }
   }
 
+  const handleRemoveCertificate = async (name: string) => {
+    const newCertificates = certificates.filter(c => c.name !== name)
+    try {
+      const response = await fetch("/api/data/certificates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: newCertificates }),
+      })
+      if (!response.ok) throw new Error("Failed to remove certificate")
+      setCertificates(newCertificates)
+      toast({
+        title: "Certificate removed",
+        description: `Certificate has been removed from your certificates.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove certificate. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleRemoveUpdate = async (id: string) => {
     const newUpdates = updates.filter(u => u.id !== id)
     setUpdates(newUpdates)
@@ -367,9 +431,10 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="skills">
-        <TabsList className="grid w-full grid-cols-4 mb-8">
+        <TabsList className="grid w-full grid-cols-5 mb-8">
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="certificates">Certificates</TabsTrigger>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="updates">Updates</TabsTrigger>
         </TabsList>
@@ -460,6 +525,52 @@ export default function AdminPage() {
                     ))
                   ) : (
                     <p className="text-muted-foreground text-center py-4">No projects added yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Certificates Tab */}
+        <TabsContent value="certificates">
+          <div className="grid gap-8 md:grid-cols-2">
+            <AddCertificateForm onAddCertificate={handleAddCertificate} editingCertificate={editingCertificate} />
+
+            <Card className="cyberpunk-glow">
+              <CardHeader>
+                <CardTitle>Current Certificates ({certificates.length})</CardTitle>
+                <CardDescription>Manage your professional certificates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {certificates.length > 0 ? (
+                    certificates.map((certificate) => (
+                      <div key={certificate.name} className="flex justify-between items-center p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium">{certificate.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {certificate.issuer} • {certificate.date}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => setEditingCertificate(certificate)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            className="cyberpunk-border"
+                            onClick={() => handleRemoveCertificate(certificate.name)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">No certificates added yet.</p>
                   )}
                 </div>
               </CardContent>
